@@ -49,11 +49,12 @@ def init_roster(client, assignment_id, roster):
         w = csv.writer(out)
         w.writerow([
             'name',
-            'codegrade-user',
+            'username',
+            'user_id',
             'webhook_url',
             'secret',
             'deploy_key',
-            'github-user',
+            'github_user',
             'personal-access-token'
         ])
 
@@ -68,6 +69,7 @@ def init_roster(client, assignment_id, roster):
             w.writerow([
                 u.user.name,
                 u.user.username,
+                u.user.id,
                 webhook['url'],
                 webhook['secret'],
                 webhook['key'],

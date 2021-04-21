@@ -3,13 +3,14 @@ import csv
 from datetime import datetime
 from github import Github
 import codegrade
+import json
 
 # Load the roster generated in `create_roster.py` and return list of users
 def load_user_data(filename='roster.csv'):
     with open(filename) as user_data:
         reader = csv.DictReader(user_data)
         try:
-            data = [line for line in reader if line['github-user'] != '?']
+            data = [line for line in reader if line['github_user'] != '?']
         except csv.Error as e:
             sys.exit(
                 'file {}, line {}: {}'.format(
@@ -32,34 +33,34 @@ def sync(access, organization, roster, assignment):
     # already
     for student in students:
         try:
-            # g = Github(student['personal-access-token'])
-            # user = g.get_user()
-            # repo = g.get_repo("LambdaSchool/" + assignment['github-name'])
-            # repo = user.create_fork(repo)
+            g = Github(student['personal-access-token'])
+            user = g.get_user()
+            repo = g.get_repo("LambdaSchool/" + assignment['github-name'])
+            repo = user.create_fork(repo)
             
-            # repo = g.get_repo(
-            #     student['github-user'] + "/" + assignment['github-name']
-            # )
+            repo = g.get_repo(
+                student['github_user'] + "/" + assignment['github-name']
+            )
 
-            # # Set deploy key if none is set already
-            # repo.create_key(
-            #     title='codegrade-key',
-            #     key=student['deploy_key']
-            # )
+            # Set deploy key if none is set already
+            repo.create_key(
+                title='codegrade-key',
+                key=student['deploy_key']
+            )
         
-            # repo.create_hook(
-            #     'web',
-            #     config={
-            #         'url': student['webhook_url'],
-            #         'content_type': 'json',
-            #         'secret': student['secret']
-            #     },
-            #     events=['push'],
-            #     active=True
-            # )
+            repo.create_hook(
+                'web',
+                config={
+                    'url': student['webhook_url'],
+                    'content_type': 'json',
+                    'secret': student['secret']
+                },
+                events=['push'],
+                active=True
+            )
 
-            # today = datetime.today()
-            # repo.create_file("codegrade_log.md", "codegrade", "Connected to codegrade: " + today.strftime("%m/%d/%Y %H:%M:%S"))
+            today = datetime.today()
+            repo.create_file("codegrade_log.md", "codegrade", "Connected to codegrade: " + today.strftime("%m/%d/%Y %H:%M:%S"))
 
             client = codegrade.login(
                 username='17eae2b2-b658-448c-b239-c74e7ec52d0b',
@@ -67,8 +68,14 @@ def sync(access, organization, roster, assignment):
                 tenant='Lambda School'
             )
 
-            submissions = client.assignment.get_all_submissions(assignment_id=assignment['codegrade-id'])
-            print(submissions)
+            submissions = client.assignment.get_submissions_by_user(assignment_id=assignment['codegrade-id'], user_id=student['user_id'])
+
+            if len(submissions) > 0:
+                print("codegrade integration was successful")
+            else:
+                print("codegrade intergration not successful")
+            
+            
         except:
             e = sys.exc_info()[0]
             print('>', 'Error:', e.status)
