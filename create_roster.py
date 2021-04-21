@@ -53,7 +53,8 @@ def init_roster(client, assignment_id, roster):
             'webhook_url',
             'secret',
             'deploy_key',
-            'github-user'
+            'github-user',
+            'personal-access-token'
         ])
 
         # Loop over all users in the course and write webhook data in row
@@ -70,7 +71,8 @@ def init_roster(client, assignment_id, roster):
                 webhook['url'],
                 webhook['secret'],
                 webhook['key'],
-                'wlongmireLambda'
+                'wlongmireLambda',
+                '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'
             ])
 
 

@@ -1,13 +1,8 @@
-# Additional script: Importing webhook data to GitHub
-# Part of "Focus Group: Using the API" (12 March 2021)
-# By Claudia Chirita (University of Edinburgh) & Devin Hillenius (CodeGrade)
-#
-# More info at codegrade.com
-
 import sys
 import csv
+from datetime import datetime
 from github import Github
-
+import codegrade
 
 # Load the roster generated in `create_roster.py` and return list of users
 def load_user_data(filename='roster.csv'):
@@ -28,7 +23,6 @@ def load_user_data(filename='roster.csv'):
 
 # Login to GitHub and set correct webhooks for student repos in organization
 def sync(access, organization, roster, assignment):
-    g = Github(access['github']['token'])
     students = load_user_data(roster)
 
     no_users = 0
@@ -38,10 +32,11 @@ def sync(access, organization, roster, assignment):
     # already
     for student in students:
         try:
-            # user = g.get_user(student['github-user'])
-            # repo = g.get_repo("LambdaSchool/" + assignment['github-name'])
-            # user.create_fork(repo)
-
+            g = Github(student['personal-access-token'])
+            user = g.get_user()
+            repo = g.get_repo("LambdaSchool/" + assignment['github-name'])
+            repo = user.create_fork(repo)
+            
             repo = g.get_repo(
                 student['github-user'] + "/" + assignment['github-name']
             )
@@ -62,6 +57,17 @@ def sync(access, organization, roster, assignment):
                 events=['push'],
                 active=True
             )
+
+            today = datetime.today()
+            repo.create_file("codegrade_log.md", "codegrade", "Connected to codegrade: " + today.strftime("%m/%d/%Y %H:%M:%S"))
+
+            client = codegrade.login(
+                username='17eae2b2-b658-448c-b239-c74e7ec52d0b',
+                password='greenGrass1982',
+                tenant='Lambda School'
+            )
+
+            client.assignment.get_all_submissions(assignment_id=assignment['codegrade-id'])
         except:
             e = sys.exc_info()[0]
             print('>', 'Error:', e.status)
@@ -92,7 +98,8 @@ def main():
 
         # SET GITHUB REPO NAME PREFIX
         assignment={
-            'github-name': 'web-sprint-challenge-advanced-web-applications-solution'
+            'github-name': 'web-sprint-challenge-advanced-web-applications-solution',
+            'codegrade-id': 3470
         }
     )
 
