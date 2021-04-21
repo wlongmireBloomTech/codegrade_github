@@ -32,34 +32,34 @@ def sync(access, organization, roster, assignment):
     # already
     for student in students:
         try:
-            g = Github(student['personal-access-token'])
-            user = g.get_user()
-            repo = g.get_repo("LambdaSchool/" + assignment['github-name'])
-            repo = user.create_fork(repo)
+            # g = Github(student['personal-access-token'])
+            # user = g.get_user()
+            # repo = g.get_repo("LambdaSchool/" + assignment['github-name'])
+            # repo = user.create_fork(repo)
             
-            repo = g.get_repo(
-                student['github-user'] + "/" + assignment['github-name']
-            )
+            # repo = g.get_repo(
+            #     student['github-user'] + "/" + assignment['github-name']
+            # )
 
-            # Set deploy key if none is set already
-            repo.create_key(
-                title='codegrade-key',
-                key=student['deploy_key']
-            )
+            # # Set deploy key if none is set already
+            # repo.create_key(
+            #     title='codegrade-key',
+            #     key=student['deploy_key']
+            # )
         
-            repo.create_hook(
-                'web',
-                config={
-                    'url': student['webhook_url'],
-                    'content_type': 'json',
-                    'secret': student['secret']
-                },
-                events=['push'],
-                active=True
-            )
+            # repo.create_hook(
+            #     'web',
+            #     config={
+            #         'url': student['webhook_url'],
+            #         'content_type': 'json',
+            #         'secret': student['secret']
+            #     },
+            #     events=['push'],
+            #     active=True
+            # )
 
-            today = datetime.today()
-            repo.create_file("codegrade_log.md", "codegrade", "Connected to codegrade: " + today.strftime("%m/%d/%Y %H:%M:%S"))
+            # today = datetime.today()
+            # repo.create_file("codegrade_log.md", "codegrade", "Connected to codegrade: " + today.strftime("%m/%d/%Y %H:%M:%S"))
 
             client = codegrade.login(
                 username='17eae2b2-b658-448c-b239-c74e7ec52d0b',
@@ -67,7 +67,8 @@ def sync(access, organization, roster, assignment):
                 tenant='Lambda School'
             )
 
-            client.assignment.get_all_submissions(assignment_id=assignment['codegrade-id'])
+            submissions = client.assignment.get_all_submissions(assignment_id=assignment['codegrade-id'])
+            print(submissions)
         except:
             e = sys.exc_info()[0]
             print('>', 'Error:', e.status)
