@@ -44,6 +44,8 @@ def init_roster(client, assignment_id, roster):
 
     users = list(filter(lambda u: u.user.username == '17eae2b2-b658-448c-b239-c74e7ec52d0b', allusers))
 
+    print("users: ", users)
+
     # Open / create roster file and write header and row per user
     with open(roster, mode='w', newline='') as out:
         w = csv.writer(out)
