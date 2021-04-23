@@ -7,18 +7,18 @@ import json
 
 # Load the roster generated in `create_roster.py` and return list of users
 def load_user_data(filename='roster.csv'):
-    with open(filename) as user_data:
-        reader = csv.DictReader(user_data)
-        try:
-            data = [line for line in reader if line['github_user'] != '?']
-        except csv.Error as e:
-            sys.exit(
-                'file {}, line {}: {}'.format(
-                    filename,
-                    reader.line_num,
-                    e
-                )
-            )
+    # with open(filename) as user_data:
+    #     reader = csv.DictReader(user_data)
+    #     try:
+    #         data = [line for line in reader if line['github_user'] != '?']
+    #     except csv.Error as e:
+    #         sys.exit(
+    #             'file {}, line {}: {}'.format(
+    #                 filename,
+    #                 reader.line_num,
+    #                 e
+    #             )
+    #         )
     return data
 
 

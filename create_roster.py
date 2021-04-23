@@ -90,7 +90,7 @@ def main():
     # SET ASSIGNMENT ID AND EXPORT FILE NAME
     init_roster(
         client,
-        assignment_id=3470,
+        assignment_id=2496,
         roster='roster.csv'
     )
 
