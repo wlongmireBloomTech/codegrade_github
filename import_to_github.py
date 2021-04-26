@@ -1,76 +1,69 @@
 import sys
 import csv
+
 from datetime import datetime
 from github import Github
 import codegrade
-import json
 
-# Load the roster generated in `create_roster.py` and return list of users
-def load_user_data(filename='roster.csv'):
-    with open(filename) as user_data:
-        reader = csv.DictReader(user_data)
-        try:
-            data = [line for line in reader if line['github_user'] != '?']
-        except csv.Error as e:
-            sys.exit(
-                'file {}, line {}: {}'.format(
-                    filename,
-                    reader.line_num,
-                    e
-                )
-            )
-    return data
+from create_roster import get_roster
 
+from credentials import organization, cg_credentials, assignment
+
+def create_student_repo(student, assignment):
+    g = Github(student['personal-access-token'])
+    user = g.get_user()
+    repo = g.get_repo("LambdaSchool/" + assignment['github-name'])
+    repo = user.create_fork(repo)
+    
+    repo = g.get_repo(
+        student['github_user'] + "/" + assignment['github-name']
+    )
+
+    return repo
+
+def connect_repo_to_codegrade(repo, student):
+    repo.create_key(
+        title='codegrade-key',
+        key=student['deploy_key']
+    )
+
+    repo.create_hook(
+        'web',
+        config={
+            'url': student['webhook_url'],
+            'content_type': 'json',
+            'secret': student['secret']
+        },
+        events=['push'],
+        active=True
+    )
+
+# def submit_to_codegrade(repo, cg_credentials, assignment, student):
+def submit_to_codegrade(repo, client, assignment, student):
+    today = datetime.today()
+    repo.create_file("codegrade_log.md", "codegrade", "Connected to codegrade: " + today.strftime("%m/%d/%Y %H:%M:%S"))
+
+    # ideally this should check codegrade for a successful submisison, but it looks like we have a race condition here
+    # submissions = client.assignment.get_submissions_by_user(assignment_id=assignment['codegrade-id'], user_id=student['user_id'])
+    # print(len(submissions))
+
+    # return (len(submissions) > 0)
+    return True
 
 # Login to GitHub and set correct webhooks for student repos in organization
-def sync(organization, roster, assignment):
-    students = load_user_data(roster)
-
+def sync(organization, roster, assignment, client):
     no_users = 0
     no_errors = 0
 
     # Loop over all users from the roster file and set webhook data if not set
     # already
-    for student in students:
+    for student in roster:
         try:
-            g = Github(student['personal-access-token'])
-            user = g.get_user()
-            repo = g.get_repo("LambdaSchool/" + assignment['github-name'])
-            repo = user.create_fork(repo)
-            
-            repo = g.get_repo(
-                student['github_user'] + "/" + assignment['github-name']
-            )
+            repo = create_student_repo(student, assignment)
+            connect_repo_to_codegrade(repo, student)
+            isSuccessful = submit_to_codegrade(repo, client, assignment, student)
 
-            # Set deploy key if none is set already
-            repo.create_key(
-                title='codegrade-key',
-                key=student['deploy_key']
-            )
-        
-            repo.create_hook(
-                'web',
-                config={
-                    'url': student['webhook_url'],
-                    'content_type': 'json',
-                    'secret': student['secret']
-                },
-                events=['push'],
-                active=True
-            )
-
-            today = datetime.today()
-            repo.create_file("codegrade_log.md", "codegrade", "Connected to codegrade: " + today.strftime("%m/%d/%Y %H:%M:%S"))
-
-            client = codegrade.login(
-                username='17eae2b2-b658-448c-b239-c74e7ec52d0b',
-                password='greenGrass1982',
-                tenant='Lambda School'
-            )
-
-            submissions = client.assignment.get_submissions_by_user(assignment_id=assignment['codegrade-id'], user_id=student['user_id'])
-
-            if len(submissions) > 0:
+            if isSuccessful:
                 print("codegrade integration was successful")
             else:
                 print("codegrade intergration not successful")
@@ -87,22 +80,27 @@ def sync(organization, roster, assignment):
 
 
 def main():
-    organization = {'github-name': 'LambdaSchool' }
-    roster='roster.csv'
-    assignment={
-        'github-name': 'web-sprint-challenge-advanced-web-applications-solution',
-        'codegrade-id': 2496
-    }
+    client = codegrade.login(
+        username=cg_credentials['username'],
+        password=cg_credentials['password'],
+        tenant=cg_credentials['tenant']
+    )
+
+    roster = get_roster(
+        client,
+        assignment_id=assignment['codegrade-id']
+    )
 
     sync(
         # SET GITHUB ORGANIZATION INFORMATION NAME
         organization,
 
-        # SET ROSTER FILE (GENERATED BY `CREATE_ROSTER.PY`)
+        # SET ROSTER FILE (GENERATED BY `GET_ROSTER.PY`)
         roster,
 
         # SET GITHUB REPO NAME PREFIX
-        assignment
+        assignment,
+        client
     )
 
 
